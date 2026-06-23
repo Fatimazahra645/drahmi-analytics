@@ -2,6 +2,7 @@
 
 from functools import lru_cache
 
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,6 +12,7 @@ class Settings(BaseSettings):
     drahmi_api_key: str = ""
     drahmi_base_url: str = "https://api.drahmi.app"
     drahmi_timeout_seconds: float = 30.0
+    drahmi_max_concurrent: int = Field(default=4, ge=1)
     host: str = "127.0.0.1"
     port: int = 8000
 

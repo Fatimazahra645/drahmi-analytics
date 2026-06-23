@@ -27,7 +27,9 @@ app/
   main.py                        # FastAPI app + static files
   settings.py                    # env config
   core/http.py                   # shared httpx pool (like eco-ai)
+  core/drahmi_limiter.py         # max 4 concurrent upstream Drahmi calls
   integrations/drahmi/client.py  # DrahmiClient — /api/v1 paths + X-API-Key
+  integrations/drahmi/cache.py   # in-memory TTL (stocks 15m, history/risk 10m)
   routes/drahmi.py               # browser proxy → DrahmiClient.proxy_get()
 static/
   index.html                     # dashboard UI

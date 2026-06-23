@@ -9,7 +9,9 @@ from urllib.parse import urlencode
 
 import httpx
 
+from app.core.drahmi_limiter import get_drahmi_semaphore
 from app.core.http import get_http_client
+from app.integrations.drahmi.cache import get_cached, set_cached
 from app.integrations.drahmi.exceptions import DrahmiApiError, DrahmiError
 from app.settings import Settings, get_settings
 
@@ -96,18 +98,26 @@ class DrahmiClient:
         params: list[tuple[str, str]] | None = None,
     ) -> httpx.Response:
         """Pass-through GET for browser proxy — returns raw upstream response."""
+        cached = get_cached(path, params)
+        if cached is not None:
+            return cached
+
         url = f"{self._base_url}{_API_PREFIX}/{path.lstrip('/')}"
         try:
-            return await self._http.get(
-                url,
-                params=params or None,
-                headers=self._headers,
-                timeout=self._timeout,
-            )
+            async with get_drahmi_semaphore():
+                response = await self._http.get(
+                    url,
+                    params=params or None,
+                    headers=self._headers,
+                    timeout=self._timeout,
+                )
         except httpx.TimeoutException as exc:
             raise DrahmiApiError("Drahmi API request timed out.") from exc
         except httpx.HTTPError as exc:
             raise DrahmiApiError(f"Drahmi API request failed: {exc}") from exc
+
+        set_cached(path, params, response)
+        return response
 
     async def _get(self, path: str, *, params: dict[str, Any] | None = None) -> Any:
         url = f"{self._base_url}{path}"
